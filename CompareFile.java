@@ -1,13 +1,11 @@
 import java.io.*;
 import java.util.*;
-public class CompareFile{	
+public class CompareFileUpgrade{	
 	public static ArrayList<String> config = new ArrayList<String>();
-	
 	public static void main(String[] args) throws FileNotFoundException{
-		createVariable(args[0]);
+		createVariable("./config.txt");
 		try {
 			compile(config.get(0), config.get(1));
-			System.out.println("Running...");
 			Thread.sleep(1500);
 		} catch (Exception e) {
 			;
@@ -15,16 +13,14 @@ public class CompareFile{
 
 		Thread compileThread = new Thread(() -> {
 			try {
-				String nameCase = config.get(2);
-				String pathCase = config.get(3);
-				String nameAns = config.get(4);
-				String pathAns = config.get(5);
-				for(int i = 6;i<config.size();i++) {
+				String pathCase = config.get(2);
+				String pathAns = config.get(3);
+				for(int i = 4;i<config.size();i++) {
 					run(config.get(0), config.get(1), config.get(i));
 				}
 
 				Thread.sleep(1000);
-				compare(nameCase,pathCase,nameAns,pathAns);
+				compare(pathCase,pathAns);
             } catch(Exception e) {
 				e.printStackTrace();
                 System.out.println("Cannot run thread");
@@ -53,56 +49,48 @@ public class CompareFile{
 		}	
 	}
 
-	public static void compare(String nameCase, String pathCase, String nameAns, String pathAns) throws FileNotFoundException{
-		int fileWrong = 0;
-		int caseNumbers = 0;
-		for(int i=1; i>=0; i++){
-			File fileCase = new File(pathCase+"/"+nameCase+String.valueOf(i)+".txt");
-			if(!fileCase.exists()){
-				caseNumbers = i;
-				break;
-			}
-
+	public static File[] readFolder(String pathFolder){
+		File fileOrDir = new File(pathFolder);
+        if (fileOrDir.isDirectory()) {
+            File[] children = fileOrDir.listFiles();
+            return children;
+        }
+        return null;
+	}
+	public static void compare(String pathCase, String pathAns) throws FileNotFoundException{
+		File[] folderCase = readFolder(pathCase);
+		File[] folderAns = readFolder(pathAns);
+		int caseRight = folderCase.length;
+		for (File eachCase : folderCase) {
+			File fileCase = new File(pathCase+"./"+eachCase.getName());
 			BufferedReader readerCase = new BufferedReader(new FileReader(fileCase));
-			File fileAns = new File(pathAns+"/"+nameCase+String.valueOf(i)+".txt");
 
-			if(!fileAns.exists()){
-				caseNumbers = i;
-				continue;
-			}
-
-
+			File fileAns = new File(pathAns+eachCase.getName());
 			BufferedReader readerAns = new BufferedReader(new FileReader(fileAns));
-			try {
-				String lineCase = readerCase.readLine();
+			
+			try{
 				String lineAns = readerAns.readLine();
+				String lineCase = readerCase.readLine();
 				while(lineCase!=null){
-					if(lineAns==null){
-						System.out.println("Not enough answers in Case "+i);
-						fileWrong++;
+					if(!lineAns.equals(lineCase)){
+						System.out.println("You wrong case "+eachCase.getName());
+						caseRight--;
 						break;
 					}
-					
-					if(!lineCase.equals(lineAns)){
-						System.out.println("Answers is wrong in Case "+i);
-						fileWrong++;
-						break;
-					}
-
 					lineCase = readerCase.readLine();
 					lineAns = readerAns.readLine();
 				}
-			} catch(IOException ex){
-				System.out.println("Can't read file");
 			}
-		}
-
-		System.out.format("Result: %.2f%%", ((caseNumbers - fileWrong)/(double)caseNumbers)*100);	
+			catch(IOException ex){
+				System.out.println("Can't read file");
+			}	
+        }
+        System.out.println("Percent = " + ((double)caseRight/folderCase.length)*100);
 	}
 
-    private static void compile(String language, String fileName) {
+    private static void compile(String languages, String fileName) {
         try {
-            switch(language) {
+            switch(languages) {
                 case "java":
                     Runtime.getRuntime().exec("javac "+fileName+".java");
                     break;
@@ -115,9 +103,9 @@ public class CompareFile{
         }
     }
 
-    private static void run(String language, String fileName, String argument) {
+    private static void run(String languages, String fileName, String argument) {
         try {
-            switch(language) {
+            switch(languages) {
                 case "java":
                     Runtime.getRuntime().exec("java "+fileName + " " +argument);
                     break;
